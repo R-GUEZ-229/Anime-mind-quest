@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Anime Mind Quest | Premium Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <script>
+      window.process = window.process || {};
+      window.process.env = window.process.env || {};
+      window.process.env.API_KEY = "";
+    </script>
+    <style>
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+            --primary-color: #ff0000;
+            --accent-color: #ff4444;
+            --glow-color: rgba(255, 0, 0, 0.5);
+            --bg-color: #050505;
+        }
+
+        [data-theme='neon'] { --primary-color: #00f2ff; --accent-color: #0066ff; --glow-color: rgba(0, 242, 255, 0.5); }
+        [data-theme='blue_horizon'] { --primary-color: #3b82f6; --accent-color: #1d4ed8; --glow-color: rgba(59, 130, 246, 0.5); }
+        [data-theme='blood_shinobi'] { --primary-color: #991b1b; --accent-color: #7f1d1d; --glow-color: rgba(153, 27, 27, 0.5); }
+        [data-theme='void_infinity'] { --primary-color: #4338ca; --accent-color: #312e81; --glow-color: rgba(67, 56, 202, 0.5); }
+        [data-theme='cyber_nexus'] { --primary-color: #06b6d4; --accent-color: #0891b2; --glow-color: rgba(6, 182, 212, 0.5); }
+        [data-theme='sakura_bloom'] { --primary-color: #ec4899; --accent-color: #db2777; --glow-color: rgba(236, 72, 153, 0.5); }
+        [data-theme='golden_age'] { --primary-color: #eab308; --accent-color: #ca8a04; --glow-color: rgba(234, 179, 8, 0.5); }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--bg-color);
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            user-select: none;
+            height: 100%;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.5s ease;
+        }
+        #root { height: 100%; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .theme-text { color: var(--primary-color); }
+        .theme-bg { background-color: var(--primary-color); }
+        .theme-border { border-color: var(--primary-color); }
+        .theme-glow { box-shadow: 0 0 15px var(--glow-color); }
+        .theme-glow-text { text-shadow: 0 0 10px var(--primary-color); }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+            20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+        .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes critical-hit {
+            0% { filter: brightness(1); }
+            10% { filter: brightness(3) contrast(1.5); }
+            100% { filter: brightness(1); }
+        }
+        .animate-critical { animation: critical-hit 0.5s ease-out; }
+        @keyframes slideIn {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .page-transition { animation: slideIn 0.3s ease-out forwards; }
+    </style>
+<script type="importmap">{"imports":{"react":"https://esm.sh/react@^19.2.3","react-dom":"https://esm.sh/react-dom@^19.2.3","react/":"https://esm.sh/react@^19.2.3/","react-dom/":"https://esm.sh/react-dom@^19.2.3/","@google/genai":"https://esm.sh/@google/genai@^1.35.0"}}</script>
+</head>
+<body class="bg-black">
+    <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
+</body>
+</html>
