@@ -1,22 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../lib/gameStore';
-import { GoogleGenAI } from "@google/genai";
 import { playSound } from '../lib/audio';
-
-// Liste de référence pour l'IA
-const TOP_100_ANIME_REF = [
-  "Attack on Titan", "Death Note", "Naruto", "One Piece", "Dragon Ball", "Jujutsu Kaisen", "Demon Slayer", "Fullmetal Alchemist", "Hunter x Hunter", "Bleach", "Berserk", "Evangelion", "Code Geass", "Steins;Gate", "Vinland Saga", "JoJo’s Bizarre Adventure", "Chainsaw Man", "Tokyo Ghoul", "Akira", "Cyberpunk Edgerunners"
-];
-
-interface AIQuestion {
-  question: string;
-  options: { text: string; trait: string }[];
-}
+import { callGeminiWithRetry, getModelForTask } from '../lib/ai';
 
 const Personality: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { setPersonality, user } = useGame();
-  const [questions, setQuestions] = useState<AIQuestion[]>([]);
+  const [questions, setQuestions] = useState<{ question: string; options: { text: string; trait: string }[] }[]>([]);
   const [step, setStep] = useState(0);
   const [choices, setChoices] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,13 +17,15 @@ const Personality: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
     setLoading(true);
     setIsTakingTest(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const res = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: "Génère 5 questions de personnalité totalement imprévisibles et créatives sur l'univers des anime. Mélange des situations de vie quotidienne, des dilemmes moraux et des choix métaphysiques. Langue : Français. Format JSON strict : { questions: Array<{ question: string, options: Array<{ text: string, trait: string }> }> }",
-        config: { responseMimeType: 'application/json' }
-      });
-      const data = JSON.parse(res.text || '{"questions":[]}');
+      const data = await callGeminiWithRetry(async (ai) => {
+        const res = await ai.models.generateContent({
+          model: getModelForTask('text'),
+          contents: "Génère 5 questions de personnalité totalement imprévisibles et créatives sur l'univers des anime. Mélange des situations de vie quotidienne, des dilemmes moraux et des choix métaphysiques. Langue : Français. Format JSON strict : { questions: Array<{ question: string, options: Array<{ text: string, trait: string }> }> }",
+          config: { responseMimeType: 'application/json' }
+        });
+        return JSON.parse(res.text || '{"questions":[]}');
+      }, `personality_quiz_v1`);
+      
       setQuestions(data.questions);
     } catch (err) {
       console.error("Erreur questions:", err);
@@ -59,18 +50,18 @@ const Personality: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
     } else {
       setAnalyzing(true);
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const analysis = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: `Analyse psychologique : [${nextChoices.join(", ")}]. 
-          MISSION : Identifie le personnage ICONIQUE appartenant EXCLUSIVEMENT aux TOP 100 ANIME mondiaux (ex: Naruto, L, Levi, Guts, Luffy, Alucard, etc.) qui correspond à ce profil. 
-          VÉRIFIE : Le nom de l'anime doit être exact et reconnu.
-          Format JSON : { name, anime, description, rarity, visualContext }`,
-          config: { responseMimeType: 'application/json' }
+        const data = await callGeminiWithRetry(async (ai) => {
+          const analysis = await ai.models.generateContent({
+            model: getModelForTask('text'),
+            contents: `Analyse psychologique : [${nextChoices.join(", ")}]. 
+            MISSION : Identifie le personnage ICONIQUE appartenant EXCLUSIVEMENT aux TOP 100 ANIME mondiaux (ex: Naruto, L, Levi, Guts, Luffy, Alucard, etc.) qui correspond à ce profil. 
+            VÉRIFIE : Le nom de l'anime doit être exact et reconnu.
+            Format JSON : { name, anime, description, rarity, visualContext }`,
+            config: { responseMimeType: 'application/json' }
+          });
+          return JSON.parse(analysis.text || '{}');
         });
 
-        const data = JSON.parse(analysis.text || '{}');
-        
         const finalData = {
           name: data.name || "Guerrier Légendaire",
           anime: data.anime || "Anime Top 100",
@@ -79,18 +70,19 @@ const Personality: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
           visualContext: data.visualContext || "cinematic anime style"
         };
 
-        const imgRes = await ai.models.generateContent({
-          model: 'gemini-2.5-flash-image',
-          contents: { parts: [{ text: `High-end anime key visual: ${finalData.name} from "${finalData.anime}". Masterpiece production, iconic pose, atmospheric, 8k. NO TEXT.` }] },
-          config: { imageConfig: { aspectRatio: "3:4" } }
+        const imgUrl = await callGeminiWithRetry(async (ai) => {
+          const imgRes = await ai.models.generateContent({
+            model: getModelForTask('image'),
+            contents: { parts: [{ text: `High-end anime key visual: ${finalData.name} from "${finalData.anime}". Masterpiece production, iconic pose, atmospheric, 8k. NO TEXT.` }] },
+            config: { imageConfig: { aspectRatio: "3:4" } }
+          });
+          for (const part of imgRes.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+          }
+          return "https://picsum.photos/seed/personality/400/600";
         });
 
-        let img = "https://picsum.photos/seed/personality/400/600";
-        for (const part of imgRes.candidates?.[0]?.content?.parts || []) {
-          if (part.inlineData) { img = `data:image/png;base64,${part.inlineData.data}`; break; }
-        }
-
-        const resObj = { ...finalData, imageUrl: img };
+        const resObj = { ...finalData, imageUrl: imgUrl };
         setResult(resObj);
         setPersonality(resObj);
         setIsTakingTest(false);
